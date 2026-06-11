@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAPS iLodge | AI-Powered Ticket System</title>
+<style>
+/* =========================================================
+   BASE RESET & TYPOGRAPHY
+========================================================= */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: linear-gradient(135deg, #0f172a 0%, #1e3a3a 100%); min-height: 100vh; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 20px; }
+.app-container { max-width: 1400px; margin: 0 auto; }
+
+/* =========================================================
+   HEADER
+========================================================= */
+.header { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 24px; padding: 20px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 1px solid rgba(255,193,7,0.3); }
+.logo h1 { font-size: 1.8rem; background: linear-gradient(135deg, #1e3a3a, #ffb347); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.logo p { color: #64748b; font-size: 0.85rem; }
+.badge { background: #ffb347; color: #1e3a3a; padding: 8px 20px; border-radius: 40px; font-weight: 600; font-size: 0.85rem; }
+.db-indicator { display: inline-flex; align-items: center; gap: 6px; background: #ecfdf5; color: #065f46; font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; border: 1.5px solid #6ee7b7; }
+.db-dot { width: 7px; height: 7px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* =========================================================
+   ROLE SELECTOR & AUTH
+========================================================= */
+.role-selector { display: flex; gap: 12px; background: #f1f5f9; padding: 6px; border-radius: 60px; width: fit-content; margin-bottom: 24px; flex-wrap: wrap; }
+.role-btn { border: none; background: transparent; padding: 10px 28px; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem; }
+.role-btn.active { background: #1e3a3a; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+
+/* =========================================================
+   CARDS & FORMS
+========================================================= */
+.card { background: white; border-radius: 24px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: transform 0.2s ease; }
+.card:hover { transform: translateY(-2px); }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; color: #334155; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 0.95rem; transition: all 0.3s ease; font-family: inherit; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #ffb347; box-shadow: 0 0 0 3px rgba(255,179,71,0.1); }
+textarea { resize: vertical; min-height: 100px; }
+.password-wrapper { position: relative; }
+.password-wrapper input { padding-right: 48px; }
+.eye-btn { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; display: flex; align-items: center; transition: color 0.2s; }
+.eye-btn:hover { color: #1e3a3a; }
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+.btn { background: #1e3a3a; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; width: 100%; font-size: 0.95rem; }
+.btn-primary { background: linear-gradient(135deg, #1e3a3a, #2d5a5a); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+.btn-secondary { background: #ffb347; color: #1e3a3a; }
+.btn-secondary:hover { background: #ff9f1a; transform: translateY(-2px); }
+.btn-outline { background: transparent; border: 2px solid #ffb347; color: #ffb347; }
+.btn-outline:hover { background: #ffb347; color: white; }
+.btn-small { width: auto; padding: 8px 16px; font-size: 0.85rem; }
+.btn-open { background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; border: none; padding: 7px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; width: auto; }
+.btn-resolve { background: linear-gradient(135deg, #10b981, #34d399); color: white; border: none; padding: 7px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; width: auto; }
+.btn-close-ticket { background: linear-gradient(135deg, #64748b, #94a3b8); color: white; border: none; padding: 7px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; width: auto; }
+.btn-danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; border: none; padding: 7px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; width: auto; }
+.btn-respond { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; border: none; padding: 7px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; width: auto; }
+
+/* =========================================================
+   ALERTS
+========================================================= */
+.alert { padding: 12px 16px; border-radius: 16px; margin-top: 12px; font-size: 0.85rem; text-align: center; }
+.alert-error { background: #fee2e2; color: #b91c1c; border-left: 4px solid #b91c1c; }
+.alert-success { background: #d1fae5; color: #065f46; border-left: 4px solid #065f46; }
+.alert-info { background: #dbeafe; color: #1e40af; border-left: 4px solid #1e40af; }
+.ai-loading { background: linear-gradient(90deg, #ffb347, #ffd89b); background-size: 200% 200%; animation: gradient 1.5s ease infinite; color: #1e3a3a; font-weight: 600; }
+@keyframes gradient { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+/* =========================================================
+   TICKETS
+========================================================= */
+.ticket-section { margin-top: 24px; background: #f8fafc; border-radius: 24px; padding: 24px; }
+.search-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.search-bar input { flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 40px; font-size: 0.9rem; min-width: 160px; }
+.search-bar select { padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 40px; font-size: 0.9rem; }
+.ticket-accordion { display: flex; flex-direction: column; gap: 10px; max-height: 600px; overflow-y: auto; }
+.ticket-tab { background: white; border-radius: 18px; border-left: 6px solid; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; transition: box-shadow 0.2s; }
+.ticket-tab:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.ticket-tab-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; cursor: pointer; user-select: none; gap: 10px; flex-wrap: wrap; }
+.ticket-tab-header:hover { background: #f8fafc; }
+.ticket-tab-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+.ticket-tab-right { display: flex; align-items: center; gap: 8px; }
+.ticket-tab-body { display: none; padding: 0 20px 20px; border-top: 1px solid #f1f5f9; animation: slideDown 0.2s ease; }
+.ticket-tab-body.open { display: block; }
+@keyframes slideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+.chevron { width: 18px; height: 18px; transition: transform 0.25s ease; color: #94a3b8; flex-shrink: 0; }
+.ticket-tab.expanded .chevron { transform: rotate(180deg); }
+.ticket-body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 14px; font-size: 0.9rem; }
+.ticket-body-grid .full-width { grid-column: 1 / -1; }
+.field-label { font-weight: 600; color: #475569; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+.field-value { color: #1e293b; }
+.ticket-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; align-items: center; }
+.action-label { font-size: 0.78rem; color: #64748b; font-weight: 600; }
+.status-pill { padding: 4px 13px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+.status-Pending { background: #fef9c3; color: #854d0e; }
+.status-InProgress { background: #dbeafe; color: #1e40af; }
+.status-Resolved { background: #d1fae5; color: #065f46; }
+.status-Closed { background: #f1f5f9; color: #475569; }
+.priority-High { border-left-color: #dc2626; }
+.priority-Medium { border-left-color: #f97316; }
+.priority-Low { border-left-color: #10b981; }
+.priority-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+.ticket-list { max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+.ticket-item { background: white; border-radius: 20px; padding: 20px; border-left: 6px solid; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.ticket-item-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 12px; gap: 8px; }
+.ticket-id { font-weight: 700; font-size: 1rem; color: #1e3a3a; }
+
+/* Admin response box inside ticket */
+.admin-response-box { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #86efac; border-radius: 16px; padding: 14px 18px; margin-top: 14px; }
+.admin-response-box .response-label { font-size: 0.75rem; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.admin-response-box .response-text { color: #166534; font-size: 0.9rem; line-height: 1.6; }
+.admin-response-box .response-meta { font-size: 0.72rem; color: #4ade80; margin-top: 6px; }
+
+/* Admin respond form */
+.admin-respond-form { background: #f8fafc; border-radius: 16px; padding: 16px; margin-top: 14px; border: 2px dashed #e2e8f0; }
+.admin-respond-form textarea { width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; font-family: inherit; resize: vertical; min-height: 80px; }
+.admin-respond-form textarea:focus { outline: none; border-color: #7c3aed; }
+.admin-respond-form .respond-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+
+/* View Responses button */
+.btn-view-resp { background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; border: none; padding: 7px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; width: auto; }
+.btn-view-resp:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(14,165,233,0.3); }
+
+/* Response modal */
+.resp-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.7); z-index: 20000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.resp-modal { background: white; border-radius: 24px; padding: 28px; max-width: 520px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideDown 0.2s ease; }
+.resp-modal h3 { margin-bottom: 6px; color: #1e293b; }
+.resp-modal .ticket-ref { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
+.resp-modal .close-modal-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1rem; cursor: pointer; float: right; margin-top: -4px; }
+.resp-modal .close-modal-btn:hover { background: #e2e8f0; }
+.resp-no-response { background: #fef9c3; border: 1px solid #fde68a; border-radius: 16px; padding: 20px; text-align: center; color: #92400e; font-weight: 600; }
+.resp-has-response { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #86efac; border-radius: 16px; padding: 18px; }
+.resp-has-response .resp-by { font-size: 0.72rem; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.resp-has-response .resp-body { color: #166534; font-size: 0.92rem; line-height: 1.6; white-space: pre-wrap; }
+.resp-has-response .resp-date { font-size: 0.72rem; color: #4ade80; margin-top: 8px; }
+
+/* Admin chatbot widget */
+#adminChatWidget { position: fixed; bottom: 28px; right: 28px; z-index: 10000; display: none; flex-direction: column; align-items: flex-end; gap: 12px; }
+#adminChatWidget.visible { display: flex; }
+#adminChatToggleBtn { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #a855f7); border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+#adminChatToggleBtn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(0,0,0,0.3); }
+#adminChatToggleBtn .admin-chat-badge { position: absolute; top: -4px; right: -4px; background: #dc2626; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.65rem; font-weight: 700; display: none; align-items: center; justify-content: center; }
+#adminChatToggleBtn .admin-chat-badge.show { display: flex; }
+#adminChatPanelWidget { width: 380px; max-height: 560px; background: white; border-radius: 24px; box-shadow: 0 12px 48px rgba(0,0,0,0.22); display: none; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; }
+#adminChatPanelWidget.open { display: flex; }
+#adminChatPanelHeader { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+#adminChatPanelHeader .achat-avatar { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+#adminChatPanelHeader .achat-title { flex: 1; }
+#adminChatPanelHeader .achat-title strong { display: block; font-size: 0.95rem; }
+#adminChatPanelHeader .achat-title span { font-size: 0.72rem; opacity: 0.8; }
+#adminChatPanelHeader .achat-close { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; opacity: 0.7; }
+#adminChatPanelHeader .achat-close:hover { opacity: 1; }
+.achat-user-tabs { display: flex; gap: 0; overflow-x: auto; border-bottom: 2px solid #f1f5f9; background: #fafafa; }
+.achat-user-tab { flex-shrink: 0; padding: 10px 16px; border: none; background: none; font-size: 0.8rem; font-weight: 600; color: #94a3b8; cursor: pointer; transition: all 0.2s; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.achat-user-tab.active { color: #7c3aed; border-bottom-color: #7c3aed; background: #faf5ff; }
+.achat-user-tab .tab-badge { background: #dc2626; color: white; border-radius: 10px; padding: 1px 6px; font-size: 0.65rem; margin-left: 4px; }
+#adminChatMessages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+#adminChatInputRow { padding: 12px 14px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; background: #fafafa; }
+#adminChatInput { flex: 1; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 40px; font-size: 0.87rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
+#adminChatInput:focus { border-color: #7c3aed; }
+#adminChatSendBtn { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #a855f7); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: transform 0.15s; flex-shrink: 0; }
+#adminChatSendBtn:hover { transform: scale(1.08); }
+.achat-no-users { padding: 40px 20px; text-align: center; color: #94a3b8; font-size: 0.9rem; }
+.achat-msg-user { background: #f1f5f9; color: #1e293b; padding: 10px 14px; border-radius: 18px; border-bottom-left-radius: 4px; max-width: 82%; align-self: flex-start; font-size: 0.875rem; line-height: 1.5; }
+.achat-msg-admin { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; padding: 10px 14px; border-radius: 18px; border-bottom-right-radius: 4px; max-width: 82%; align-self: flex-end; font-size: 0.875rem; line-height: 1.5; }
+.achat-msg-label { font-size: 0.68rem; color: #94a3b8; margin-bottom: 2px; }
+.achat-msg-label.right { text-align: right; }
+
+/* =========================================================
+   STATS & DASHBOARD
+========================================================= */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: linear-gradient(135deg, #1e3a3a, #2d5a5a); color: white; padding: 20px; border-radius: 20px; text-align: center; }
+.stat-card.admin-stat { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+.stat-card.pending-stat { background: linear-gradient(135deg, #b45309, #d97706); }
+.stat-card.progress-stat { background: linear-gradient(135deg, #0369a1, #0ea5e9); }
+.stat-card.resolved-stat { background: linear-gradient(135deg, #065f46, #10b981); }
+.stat-number { font-size: 2rem; font-weight: 700; }
+.stat-label { font-size: 0.82rem; opacity: 0.9; margin-top: 6px; }
+
+/* =========================================================
+   TABS
+========================================================= */
+.tabs { display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; }
+.tab { background: none; border: none; padding: 8px 24px; font-weight: 600; cursor: pointer; color: #64748b; transition: all 0.3s ease; border-radius: 40px; font-size: 0.9rem; }
+.tab.active { background: #1e3a3a; color: white; }
+.tab.admin-tab.active { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+.sub-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 4px 0; }
+.sub-tab { border: 2px solid #e2e8f0; background: white; padding: 7px 16px; border-radius: 30px; font-weight: 600; cursor: pointer; color: #64748b; font-size: 0.82rem; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px; }
+.sub-tab:hover { border-color: #ffb347; color: #1e3a3a; }
+.sub-tab.sub-tab-active { background: #1e3a3a; color: white; border-color: #1e3a3a; }
+.sub-tab-count { background: rgba(255,255,255,0.25); padding: 1px 7px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+.sub-tab.sub-tab-active .sub-tab-count { background: rgba(255,255,255,0.3); }
+.sub-tab:not(.sub-tab-active) .sub-tab-count { background: #f1f5f9; color: #475569; }
+.admin-header-badge { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; padding: 6px 16px; border-radius: 40px; font-weight: 600; font-size: 0.82rem; }
+
+/* =========================================================
+   MISC
+========================================================= */
+.toggle-link { text-align: center; margin-top: 16px; }
+.toggle-link a { color: #ffb347; text-decoration: none; font-weight: 600; cursor: pointer; }
+.toggle-link a:hover { text-decoration: underline; }
+.hidden { display: none; }
+.user-profile-card { background: linear-gradient(135deg, #1e3a3a, #2d5a5a); color: white; border-radius: 20px; padding: 20px 24px; display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.user-avatar { width: 52px; height: 52px; border-radius: 50%; background: #ffb347; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700; color: #1e3a3a; flex-shrink: 0; }
+.user-info { flex: 1; }
+.user-info .user-name { font-weight: 700; font-size: 1.05rem; }
+.user-info .user-meta { font-size: 0.8rem; opacity: 0.75; margin-top: 3px; }
+.user-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.user-table th { padding: 12px 16px; border-bottom: 2px solid #e2e8f0; text-align: left; background: #f8fafc; }
+.user-table td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+.role-tag { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+
+/* =========================================================
+   LOADING OVERLAY
+========================================================= */
+#loadingOverlay { position: fixed; inset: 0; background: rgba(15,23,42,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 16px; }
+.spinner { width: 48px; height: 48px; border: 4px solid rgba(255,179,71,0.3); border-top-color: #ffb347; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+#loadingOverlay p { color: white; font-weight: 600; font-size: 0.95rem; }
+footer { text-align: center; margin-top: 32px; color: #94a3b8; font-size: 0.8rem; }
+
+/* =========================================================
+   AI CHATBOT WIDGET
+========================================================= */
+#chatWidget { position: fixed; bottom: 28px; right: 28px; z-index: 10000; display: none; flex-direction: column; align-items: flex-end; gap: 12px; }
+#chatWidget.visible { display: flex; }
+
+#chatToggleBtn {
+  width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #1e3a3a, #ffb347);
+  border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+#chatToggleBtn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(0,0,0,0.3); }
+#chatToggleBtn .chat-badge { position: absolute; top: -4px; right: -4px; background: #dc2626; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.65rem; font-weight: 700; display: none; align-items: center; justify-content: center; }
+#chatToggleBtn .chat-badge.show { display: flex; }
+
+#chatPanel {
+  width: 360px; max-height: 520px; background: white; border-radius: 24px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.22); display: none; flex-direction: column;
+  overflow: hidden; border: 1px solid #e2e8f0;
+}
+#chatPanel.open { display: flex; }
+
+#chatPanelHeader {
+  background: linear-gradient(135deg, #1e3a3a, #2d5a5a); color: white;
+  padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+}
+#chatPanelHeader .chat-avatar { width: 38px; height: 38px; border-radius: 50%; background: #ffb347; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+#chatPanelHeader .chat-title { flex: 1; }
+#chatPanelHeader .chat-title strong { display: block; font-size: 0.95rem; }
+#chatPanelHeader .chat-title span { font-size: 0.72rem; opacity: 0.75; }
+#chatPanelHeader .chat-close { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; opacity: 0.7; transition: opacity 0.2s; }
+#chatPanelHeader .chat-close:hover { opacity: 1; }
+
+/* Chat mode tabs */
+#chatModeTabs { display: flex; border-bottom: 2px solid #f1f5f9; }
+.chat-mode-tab { flex: 1; padding: 10px; border: none; background: none; font-size: 0.8rem; font-weight: 600; color: #94a3b8; cursor: pointer; transition: all 0.2s; }
+.chat-mode-tab.active { color: #1e3a3a; border-bottom: 2px solid #ffb347; margin-bottom: -2px; background: #fffbf0; }
+
+#chatMessages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.chat-msg { max-width: 82%; padding: 10px 14px; border-radius: 18px; font-size: 0.875rem; line-height: 1.5; }
+.chat-msg.user { background: #1e3a3a; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-msg.bot { background: #f1f5f9; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 4px; }
+.chat-msg.bot.typing { display: flex; align-items: center; gap: 6px; }
+.chat-msg.bot.typing span { width: 7px; height: 7px; background: #94a3b8; border-radius: 50%; animation: typing 1.2s infinite; }
+.chat-msg.bot.typing span:nth-child(2) { animation-delay: 0.2s; }
+.chat-msg.bot.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing { 0%,80%,100%{transform:scale(1);opacity:0.5} 40%{transform:scale(1.2);opacity:1} }
+.chat-msg.admin-reply { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #86efac; color: #166534; align-self: flex-start; }
+.chat-msg-label { font-size: 0.68rem; color: #94a3b8; margin-bottom: 2px; }
+.chat-msg-label.right { text-align: right; }
+
+#chatInputRow { padding: 12px 14px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; background: #fafafa; }
+#chatInput { flex: 1; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 40px; font-size: 0.87rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
+#chatInput:focus { border-color: #ffb347; }
+#chatSendBtn { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1e3a3a, #2d5a5a); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: transform 0.15s; flex-shrink: 0; }
+#chatSendBtn:hover { transform: scale(1.08); }
+
+/* Admin live chat panel */
+#adminChatPanel { display: none; }
+#adminChatPanel.visible { display: block; }
+.admin-chat-queue { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.admin-chat-item { background: white; border-radius: 16px; padding: 16px; border-left: 4px solid #7c3aed; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; transition: box-shadow 0.2s; }
+.admin-chat-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.admin-chat-thread { background: #f8fafc; border-radius: 16px; padding: 16px; max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+
+/* Quick suggestion chips */
+.chat-suggestions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 10px; }
+.chat-chip { background: #f1f5f9; border: 1.5px solid #e2e8f0; color: #475569; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.chat-chip:hover { background: #1e3a3a; color: white; border-color: #1e3a3a; }
+
+/* Clear chat / clear conversation buttons */
+.chat-clear-bar { display: flex; justify-content: flex-end; padding: 4px 14px 0; }
+.btn-clear-chat { background: none; border: 1.5px solid #e2e8f0; color: #94a3b8; padding: 3px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-clear-chat:hover { border-color: #dc2626; color: #dc2626; background: #fee2e2; }
+.achat-clear-bar { display: flex; justify-content: flex-end; padding: 6px 14px 0; border-bottom: 1px solid #f1f5f9; }
+.btn-achat-clear { background: none; border: 1.5px solid #e2e8f0; color: #94a3b8; padding: 3px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-achat-clear:hover { border-color: #dc2626; color: #dc2626; background: #fee2e2; }
+
+/* Delete ticket button */
+.btn-delete-ticket { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; border: none; padding: 7px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.2s; width: auto; }
+.btn-delete-ticket:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.3); }
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+@media (max-width: 768px) {
+  .auth-grid { grid-template-columns: 1fr; }
+  .header { flex-direction: column; text-align: center; gap: 12px; }
+  .ticket-body-grid { grid-template-columns: 1fr; }
+  #chatPanel { width: calc(100vw - 40px); }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" style="display:none">
+  <div class="spinner"></div>
+  <p id="loadingMsg">Loading…</p>
+</div>
+
+<!-- MAIN APP -->
+<div class="app-container">
+  <div class="header">
+    <div class="logo">
+      <h1>🛡️ SAPS iLodge</h1>
+      <p>South African Police Service | AI-Powered Ticket System</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span class="db-indicator"><span class="db-dot"></span>In-Memory Store</span>
+      <div class="badge">🇿🇦 Official Portal</div>
+    </div>
+  </div>
+  <div id="app"></div>
+  <footer>© 2025 SAPS Service Delivery | Powered by AI Routing & Groq AI Chatbot</footer>
+</div>
+
+<!-- AI CHATBOT WIDGET (shown after login) -->
+<div id="chatWidget">
+  <div id="chatPanel">
+    <div id="chatPanelHeader">
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-title">
+        <strong>SAPS iLodge Assistant</strong>
+        <span id="chatSubtitle">AI-powered support · Always available</span>
+      </div>
+      <button class="chat-close" onclick="window.toggleChat()">✕</button>
+    </div>
+    <!-- Mode tabs -->
+    <div id="chatModeTabs">
+      <button class="chat-mode-tab active" id="tabAI" onclick="window.switchChatMode('ai')">🤖 AI Assistant</button>
+      <button class="chat-mode-tab" id="tabAdmin" onclick="window.switchChatMode('admin')">💬 Chat with Admin</button>
+    </div>
+    <!-- Clear bar -->
+    <div class="chat-clear-bar">
+      <button class="btn-clear-chat" onclick="window.clearCurrentChat()" title="Clear conversation">🗑 Clear chat</button>
+    </div>
+    <!-- AI message area -->
+    <div id="chatMessages"></div>
+    <!-- Quick chips -->
+    <div class="chat-suggestions" id="chatSuggestions">
+      <button class="chat-chip" onclick="window.sendChip('How do I track my ticket?')">Track ticket</button>
+      <button class="chat-chip" onclick="window.sendChip('What departments handle complaints?')">Departments</button>
+      <button class="chat-chip" onclick="window.sendChip('How long until my ticket is resolved?')">Resolution time</button>
+      <button class="chat-chip" onclick="window.sendChip('How do I escalate my complaint?')">Escalate</button>
+    </div>
+    <div id="chatInputRow">
+      <input type="text" id="chatInput" placeholder="Ask anything about your ticket…" onkeydown="if(event.key==='Enter') window.sendChatMessage()">
+      <button id="chatSendBtn" onclick="window.sendChatMessage()">➤</button>
+    </div>
+  </div>
+  <button id="chatToggleBtn" onclick="window.toggleChat()" title="Chat with AI Assistant">
+    💬
+    <span class="chat-badge" id="chatBadge"></span>
+  </button>
+</div>
+
+<!-- ADMIN CHATBOT WIDGET (shown when admin is logged in) -->
+<div id="adminChatWidget">
+  <div id="adminChatPanelWidget">
+    <div id="adminChatPanelHeader">
+      <div class="achat-avatar">🔑</div>
+      <div class="achat-title">
+        <strong>Admin Live Chat</strong>
+        <span id="adminChatSubtitle">Reply to citizens &amp; staff</span>
+      </div>
+      <button class="achat-close" onclick="window.toggleAdminChat()">✕</button>
+    </div>
+    <div class="achat-user-tabs" id="adminChatUserTabs">
+      <!-- User tabs injected by JS -->
+    </div>
+    <div class="achat-clear-bar">
+      <button class="btn-achat-clear" onclick="window.clearAdminChatConversation()" title="Clear this conversation">🗑 Clear conversation</button>
+    </div>
+    <div id="adminChatMessages"></div>
+    <div id="adminChatInputRow">
+      <input type="text" id="adminChatInput" placeholder="Type your reply…" onkeydown="if(event.key==='Enter') window.sendAdminWidgetMessage()">
+      <button id="adminChatSendBtn" onclick="window.sendAdminWidgetMessage()">➤</button>
+    </div>
+  </div>
+  <button id="adminChatToggleBtn" onclick="window.toggleAdminChat()" title="Live Chat with Users">
+    💬
+    <span class="admin-chat-badge" id="adminChatBadge"></span>
+  </button>
+</div>
+
+<script>
+// ============================================================================
+// IN-MEMORY DATA STORE
+// ============================================================================
+const DB = {
+  users: [
+    { id: 'admin_1', email: 'admin@saps.gov.za', password: 'admin123', full_name: 'Admin Supervisor', role: 'admin', is_active: true, created_at: new Date('2024-01-01').toISOString() },
+    { id: 'staff_1', email: 'staff@saps.gov.za', password: 'staff123', full_name: 'Captain David Mbeki', role: 'staff', is_active: true, created_at: new Date('2024-01-15').toISOString() },
+    { id: 'ext_1', email: 'citizen@example.com', password: 'citizen123', full_name: 'Thabo Nkosi', role: 'external', is_active: true, created_at: new Date('2024-02-01').toISOString() },
+  ],
+  tickets: [
+    {
+      id: 1, ticket_number: 'SAPS-2401', user_id: 'ext_1', station_id: 1, station_name: 'Soweto SAPS',
+      department_id: 1, department_name: 'Information Technology',
+      description: 'My computer screen is frozen and I cannot access the system.',
+      priority: 'High', status: 'In Progress', ai_reason: 'IT issue identified via keyword matching',
+      ai_confidence: 0.85, opened_at: new Date('2024-06-01').toISOString(),
+      resolved_at: null, closed_at: null, full_name: 'Thabo Nkosi',
+      admin_response: 'We have logged your IT issue and our technician will contact you within 24 hours to resolve the screen freezing problem.',
+      admin_response_at: new Date('2024-06-02').toISOString(), admin_response_by: 'Admin Supervisor',
+    },
+    {
+      id: 2, ticket_number: 'SAPS-2402', user_id: 'ext_1', station_id: 2, station_name: 'Pretoria Central SAPS',
+      department_id: 2, department_name: 'Finance',
+      description: 'My salary payment for May was short by R1,500. Please investigate the discrepancy.',
+      priority: 'High', status: 'Pending', ai_reason: 'Finance issue identified via keyword matching',
+      ai_confidence: 0.90, opened_at: new Date('2024-06-02').toISOString(),
+      resolved_at: null, closed_at: null, full_name: 'Thabo Nkosi',
+      admin_response: null, admin_response_at: null, admin_response_by: null,
+    },
+    {
+      id: 3, ticket_number: 'SAPS-2403', user_id: 'staff_1', station_id: 3, station_name: 'Johannesburg Central SAPS',
+      department_id: 4, department_name: 'Operations',
+      description: 'Patrol vehicle engine is making unusual sounds and requires maintenance check.',
+      priority: 'Medium', status: 'In Progress', ai_reason: 'General operational matter — routed to Operations',
+      ai_confidence: 0.75, opened_at: new Date('2024-06-03').toISOString(),
+      resolved_at: null, closed_at: null, full_name: 'Captain David Mbeki',
+      admin_response: null, admin_response_at: null, admin_response_by: null,
+    },
+  ],
+  stations: [
+    {id:1,station_name:'Soweto SAPS',province:'Gauteng'},{id:2,station_name:'Pretoria Central SAPS',province:'Gauteng'},
+    {id:3,station_name:'Johannesburg Central SAPS',province:'Gauteng'},{id:4,station_name:'Cape Town Central SAPS',province:'Western Cape'},
+    {id:5,station_name:'Durban Central SAPS',province:'KwaZulu-Natal'},{id:6,station_name:'Port Elizabeth SAPS',province:'Eastern Cape'},
+    {id:7,station_name:'Bloemfontein SAPS',province:'Free State'},{id:8,station_name:'Mthatha SAPS',province:'Eastern Cape'},
+    {id:9,station_name:'Nelspruit SAPS',province:'Mpumalanga'},{id:10,station_name:'Kimberley SAPS',province:'Northern Cape'},
+    {id:11,station_name:'Polokwane SAPS',province:'Limpopo'},{id:12,station_name:'Rustenburg SAPS',province:'North West'},
+    {id:13,station_name:'George SAPS',province:'Western Cape'},{id:14,station_name:'Vereeniging SAPS',province:'Gauteng'},
+    {id:15,station_name:'Mitchells Plain SAPS',province:'Western Cape'},{id:16,station_name:'Soshanguve SAPS',province:'Gauteng'},
+    {id:17,station_name:'Tembisa SAPS',province:'Gauteng'},
+  ],
+  departments: [
+    {id:1,dept_code:'IT',dept_name:'Information Technology'},
+    {id:2,dept_code:'FIN',dept_name:'Finance'},
+    {id:3,dept_code:'HR',dept_name:'Human Resources'},
+    {id:4,dept_code:'OPS',dept_name:'Operations'},
+  ],
+  // Admin live-chat messages: { id, from_user_id, from_name, message, timestamp, is_admin }
+  chatMessages: [],
+  nextTicketNum: 2404,
+  nextChatMsgId: 1,
+};
+
+// ============================================================================
+// AI ROUTING (keyword-based)
+// ============================================================================
+function routeWithAI(description) {
+  const text = description.toLowerCase();
+  const patterns = {
+    IT:  /computer|laptop|desktop|system|software|login|network|internet|vpn|printer|email|server|crashed|technical|hardware|screen|frozen|device|keyboard|mouse|wifi|password|access|monitor|pc|scanner|application|website/,
+    FIN: /salary|salaries|pay|paid|payment|payslip|pay slip|finance|financial|invoice|allowance|claim|claims|overtime|reimbursement|money|deduction|bonus|pension|compensation|stipend|underpaid|short paid|budget/,
+    HR:  /\bhr\b|leave|annual leave|sick leave|maternity|recruitment|personnel|employee|discipline|grievance|training|transfer|holiday|contract|promotion|uniform|conduct|suspension|resignation|staff matter/,
+    OPS: /vehicle|patrol|equipment|operation|crime|case|report|arrest|firearm|ammo|shift|duty|resource|maintenance|generator|building|facility/
+  };
+  for (const [code, pattern] of Object.entries(patterns)) {
+    if (pattern.test(text)) {
+      const dept = DB.departments.find(d => d.dept_code === code);
+      return { department: code, departmentName: dept.dept_name, reason: `Automatically routed to ${dept.dept_name}`, confidence: 0.90 };
+    }
+  }
+  return { department: 'OPS', departmentName: 'Operations', reason: 'No matching keywords found — routed to Operations', confidence: 0.50 };
+}
+
+// ============================================================================
+// DB SERVICE
+// ============================================================================
+let currentUser = JSON.parse(sessionStorage.getItem('saps_user') || 'null');
+
+const DB_SERVICE = {
+  login(email, password, role) {
+    const user = DB.users.find(u => u.email === email && u.role === role);
+    if (!user) throw new Error('Invalid credentials or role mismatch');
+    if (!user.is_active) throw new Error('Account is deactivated');
+    if (user.password !== password) throw new Error('Invalid credentials');
+    currentUser = { id: user.id, email: user.email, name: user.full_name, role: user.role };
+    sessionStorage.setItem('saps_user', JSON.stringify(currentUser));
+    return { user: currentUser };
+  },
+  register(name, email, password, role) {
+    if (DB.users.find(u => u.email === email)) throw new Error('Email already registered');
+    const id = `${role}_${Date.now()}`;
+    DB.users.push({ id, email, password, full_name: name, role, is_active: true, created_at: new Date().toISOString() });
+    return { userId: id };
+  },
+  logout() { currentUser = null; sessionStorage.removeItem('saps_user'); },
+  isAuthenticated: () => !!currentUser,
+  getCurrentUser: () => currentUser,
+  getTickets() {
+    if (!currentUser) throw new Error('Not authenticated');
+    let tickets = DB.tickets;
+    if (currentUser.role === 'external') tickets = tickets.filter(t => t.user_id === currentUser.id);
+    else if (currentUser.role === 'staff') tickets = tickets.filter(t => t.user_id === currentUser.id || t.assigned_to === currentUser.id);
+    return tickets;
+  },
+  getAllTickets: () => DB.tickets,
+  createTicket(stationId, description, priority = 'Medium') {
+    const aiResult = routeWithAI(description);
+    const dept = DB.departments.find(d => d.dept_code === aiResult.department);
+    const station = DB.stations.find(s => s.id === stationId) || DB.stations[0];
+    const ticketNumber = `SAPS-${DB.nextTicketNum++}`;
+    const user = DB.users.find(u => u.id === currentUser.id);
+    const ticket = {
+      id: DB.tickets.length + 1, ticket_number: ticketNumber, user_id: currentUser.id,
+      station_id: stationId, station_name: station.station_name,
+      department_id: dept.id, department_name: dept.dept_name,
+      description, priority, status: 'Pending',
+      ai_reason: aiResult.reason, ai_confidence: aiResult.confidence,
+      opened_at: new Date().toISOString(), resolved_at: null, closed_at: null,
+      full_name: user ? user.full_name : currentUser.name,
+      admin_response: null, admin_response_at: null, admin_response_by: null,
+    };
+    DB.tickets.push(ticket);
+    return { ticketNumber, department: aiResult.department, departmentName: aiResult.departmentName, aiReason: aiResult.reason, confidence: aiResult.confidence, status: 'Pending' };
+  },
+  updateTicketStatus(ticketNumber, status) {
+    const t = DB.tickets.find(t => t.ticket_number === ticketNumber);
+    if (!t) throw new Error('Ticket not found');
+    t.status = status;
+    if (status === 'Resolved') t.resolved_at = new Date().toISOString();
+    if (status === 'Closed') t.closed_at = new Date().toISOString();
+    return { message: 'Status updated', status };
+  },
+  deleteTicket(ticketNumber) {
+    const idx = DB.tickets.findIndex(t => t.ticket_number === ticketNumber);
+    if (idx === -1) throw new Error('Ticket not found');
+    const t = DB.tickets[idx];
+    // Citizens/staff may only delete their own tickets; admins may delete any
+    if (currentUser.role !== 'admin' && t.user_id !== currentUser.id) {
+      throw new Error('You can only delete your own tickets');
+    }
+    DB.tickets.splice(idx, 1);
+    return { message: 'Ticket deleted' };
+  },
+  addAdminResponse(ticketNumber, response) {
+    const t = DB.tickets.find(t => t.ticket_number === ticketNumber);
+    if (!t) throw new Error('Ticket not found');
+    t.admin_response = response;
+    t.admin_response_at = new Date().toISOString();
+    t.admin_response_by = currentUser.name;
+    return { message: 'Response added' };
+  },
+  getUsers() {
+    return DB.users.map(u => ({ ...u, ticket_count: DB.tickets.filter(t => t.user_id === u.id).length }));
+  },
+  deleteUser(userId) {
+    if (userId === currentUser.id) throw new Error('Cannot delete your own account');
+    const idx = DB.users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error('User not found');
+    DB.users.splice(idx, 1);
+  },
+  getDashboardStats() {
+    const tickets = DB.tickets;
+    const pending = tickets.filter(t=>t.status==='Pending').length;
+    const in_progress = tickets.filter(t=>t.status==='In Progress').length;
+    const resolved = tickets.filter(t=>t.status==='Resolved').length;
+    const closed = tickets.filter(t=>t.status==='Closed').length;
+    const deptStats = DB.departments.map(d => {
+      const dTickets = tickets.filter(t=>t.department_id===d.id);
+      const closedD = dTickets.filter(t=>t.status==='Closed').length;
+      return { dept_name: d.dept_name, dept_code: d.dept_code, total: dTickets.length, closure_rate: dTickets.length ? Math.round(closedD/dTickets.length*100) : 0 };
+    });
+    return { stats: { total_tickets: tickets.length, pending, in_progress, resolved, closed }, departmentStats: deptStats };
+  },
+  getStations: () => DB.stations,
+  // Chat with admin
+  sendChatMessage(message, isAdmin = false) {
+    const msg = {
+      id: DB.nextChatMsgId++,
+      from_user_id: currentUser.id,
+      from_name: currentUser.name,
+      message,
+      timestamp: new Date().toISOString(),
+      is_admin: isAdmin,
+      role: currentUser.role,
+    };
+    DB.chatMessages.push(msg);
+    return msg;
+  },
+  getChatMessages: () => DB.chatMessages,
+};
+
+// ============================================================================
+// AI CHATBOT — Claude API
+// ============================================================================
+let chatHistory = []; // {role, content}
+let chatMode = 'ai'; // 'ai' | 'admin'
+let chatOpen = false;
+let chatBadgeCount = 0;
+
+function localAIResponse(userMessage) {
+  const msg = userMessage.toLowerCase();
+  const user = currentUser;
+  const myTickets = user ? DB.tickets.filter(t => t.user_id === user.id) : [];
+
+  // Ticket tracking
+  if (/track|where is|status of|my ticket|ticket number|saps-/i.test(msg)) {
+    if (myTickets.length === 0) return `You currently have no tickets on record. To lodge a new complaint, go to the "Lodge Complaint" tab. I can help you with anything else!`;
+    const summary = myTickets.map(t => `• **${t.ticket_number}** — ${t.status} (${t.department_name})`).join('\n');
+    return `Here are your current tickets:\n\n${summary}\n\nClick on any ticket and use the **"View Responses"** button to see admin replies. Need more help?`;
+  }
+
+  // Resolution time
+  if (/how long|resolution time|when will|how soon|time frame|deadline/i.test(msg)) {
+    return `Typical resolution times at SAPS iLodge:\n\n• **High Priority** — 24–48 hours\n• **Medium Priority** — 3–5 business days\n• **Low Priority** — 5–10 business days\n\nYou will receive an admin response on your ticket once it has been reviewed. Use the "View Responses" button on your ticket to check for updates.`;
+  }
+
+  // Escalation
+  if (/escalat|urgent|emergency|not resolv|still pending|complain about/i.test(msg)) {
+    return `To escalate your complaint:\n\n1. Use the **"Chat with Admin"** tab in this chatbot to send a direct message.\n2. Reference your ticket number (e.g. SAPS-2401) in your message.\n3. State why you need urgent attention.\n\nAdmin will be notified and will respond as soon as possible.`;
+  }
+
+  // Departments
+  if (/department|which dept|who handles|routing|it|finance|hr|human resource|operations/i.test(msg)) {
+    return `SAPS iLodge routes tickets to the correct department automatically:\n\n• **IT** — Computer, network, system, login issues\n• **Finance** — Salary, payments, allowances, claims\n• **HR** — Leave, discipline, recruitment, transfers\n• **Operations** — Vehicles, patrol, crime reports, equipment\n\nOur AI analyses your complaint description and assigns it to the best department.`;
+  }
+
+  // Lodge / submit
+  if (/lodge|submit|new complaint|new ticket|report/i.test(msg)) {
+    return `To lodge a new complaint:\n\n1. Click the **"Lodge Complaint"** tab at the top.\n2. Select your police station.\n3. Describe your issue in detail — our AI will automatically route it to the correct department.\n4. Choose a priority level and click **Submit Ticket**.\n\nYou'll receive a ticket number immediately!`;
+  }
+
+  // Admin response / view responses
+  if (/response|replied|admin said|reply|answered|feedback/i.test(msg)) {
+    const responded = myTickets.filter(t => t.admin_response);
+    if (responded.length > 0) {
+      return `You have admin responses on ${responded.length} ticket(s)! Go to **"My Tickets"** and click **"View Responses"** on any ticket to read the admin's reply.`;
+    }
+    return `Your tickets are currently awaiting an admin response. Once the admin replies, you can view it by clicking **"View Responses"** on your ticket in the "My Tickets" tab.`;
+  }
+
+  // Password / login
+  if (/password|login|sign in|forgot|reset/i.test(msg)) {
+    return `If you are having trouble logging in, please contact your station administrator. Demo credentials for testing:\n\n• Citizen: citizen@example.com / citizen123\n• Staff: staff@saps.gov.za / staff123\n• Admin: admin@saps.gov.za / admin123`;
+  }
+
+  // Greeting
+  if (/^(hi|hello|hey|good morning|good afternoon|howzit|sawubona|hola)\b/i.test(msg)) {
+    const name = user?.name ? `, ${user.name.split(' ')[0]}` : '';
+    return `Hello${name}! 👋 I'm the SAPS iLodge AI Assistant. I can help you with:\n\n• Tracking your tickets\n• Understanding ticket status\n• Escalating complaints\n• Department routing information\n• How to lodge a complaint\n\nWhat can I help you with today?`;
+  }
+
+  // Thank you
+  if (/thank|thanks|dankie|ngiyabonga/i.test(msg)) {
+    return `You're welcome! 😊 If you need anything else, I'm here to help. You can also use the **"Chat with Admin"** tab to reach a human admin directly.`;
+  }
+
+  // Default
+  return `I understand you're asking about "${userMessage.substring(0, 60)}${userMessage.length > 60 ? '...' : ''}". I can help you with:\n\n• **Tracking tickets** — ask "How do I track my ticket?"\n• **Resolution times** — ask "How long will this take?"\n• **Escalating** — ask "How do I escalate my complaint?"\n• **Departments** — ask "What departments handle complaints?"\n• **Lodging** — ask "How do I lodge a complaint?"\n\nOr switch to **"Chat with Admin"** for direct human support.`;
+}
+
+async function callClaudeAPI(userMessage) {
+  chatHistory.push({ role: 'user', content: userMessage });
+  // Use local rule-based AI — always works, no backend needed
+  await new Promise(r => setTimeout(r, 600 + Math.random() * 600)); // simulate thinking
+  const reply = localAIResponse(userMessage);
+  chatHistory.push({ role: 'assistant', content: reply });
+  return reply;
+}
+
+// ============================================================================
+// CHATBOT UI FUNCTIONS
+// ============================================================================
+window.toggleChat = function() {
+  chatOpen = !chatOpen;
+  const panel = document.getElementById('chatPanel');
+  const btn = document.getElementById('chatToggleBtn');
+  if (chatOpen) {
+    panel.classList.add('open');
+    btn.innerHTML = '✕<span class="chat-badge" id="chatBadge"></span>';
+    // Clear badge — user has now seen the messages
+    chatBadgeCount = 0;
+    const badge = document.getElementById('chatBadge');
+    if (badge) { badge.textContent = ''; badge.classList.remove('show'); }
+    if (document.getElementById('chatMessages').children.length === 0) {
+      initChatGreeting();
+    }
+    // If on admin-chat tab, refresh the thread
+    if (chatMode === 'admin') renderUserAdminThread();
+    setTimeout(() => document.getElementById('chatInput')?.focus(), 200);
+  } else {
+    panel.classList.remove('open');
+    btn.innerHTML = '💬<span class="chat-badge" id="chatBadge"></span>';
+  }
+};
+
+function initChatGreeting() {
+  const user = currentUser;
+  const greeting = user?.role === 'admin'
+    ? `Hello Admin! I can help you review tickets, understand system stats, or answer any questions about the SAPS iLodge platform. What do you need help with?`
+    : user?.role === 'staff'
+    ? `Hello ${user.name}! I'm your SAPS iLodge assistant. I can help you track tickets, understand department routing, or answer questions about the system. How can I assist you?`
+    : `Hello ${user?.name || 'there'}! Welcome to SAPS iLodge support. I can help you track your complaints, understand your ticket status, or answer any questions. What can I help you with today?`;
+  appendBotMessage(greeting);
+}
+
+function appendBotMessage(text, isAdminReply = false) {
+  const msgs = document.getElementById('chatMessages');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.innerHTML = `<div class="chat-msg-label">${isAdminReply ? '🟢 Admin' : '🤖 Assistant'}</div>
+    <div class="chat-msg ${isAdminReply ? 'admin-reply' : 'bot'}">${text.replace(/\n/g,'<br>')}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendUserMessage(text) {
+  const msgs = document.getElementById('chatMessages');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.innerHTML = `<div class="chat-msg-label right">You</div>
+    <div class="chat-msg user" style="align-self:flex-end;">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendTypingIndicator() {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.id = 'typingIndicator';
+  div.innerHTML = `<div class="chat-msg bot typing"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+window.sendChatMessage = async function() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  if (chatMode === 'admin') {
+    window.sendAdminChatMessage(text);
+    return;
+  }
+
+  appendUserMessage(text);
+  appendTypingIndicator();
+
+  try {
+    const reply = await callClaudeAPI(text);
+    removeTypingIndicator();
+    appendBotMessage(reply);
+  } catch (err) {
+    removeTypingIndicator();
+    appendBotMessage('I apologise — there was a connection issue. Please try again in a moment.');
+  }
+};
+
+window.sendChip = function(text) {
+  document.getElementById('chatInput').value = text;
+  window.sendChatMessage();
+};
+
+// Clear the current chat and start afresh
+window.clearCurrentChat = function() {
+  if (!confirm('Clear this conversation? This cannot be undone.')) return;
+  if (chatMode === 'admin') {
+    // Remove this user's messages and admin replies to them from the shared store
+    DB.chatMessages = DB.chatMessages.filter(m => !(
+      (m.from_user_id === currentUser.id && !m.is_admin) ||
+      (m.to_user_id === currentUser.id && m.is_admin)
+    ));
+    renderUserAdminThread();
+    // Also refresh admin widget if open, since the thread changed
+    if (adminChatOpen) refreshAdminChatWidget();
+  } else {
+    // Reset AI conversation
+    chatHistory = [];
+    document.getElementById('chatMessages').innerHTML = '';
+    initChatGreeting();
+  }
+};
+
+window.switchChatMode = function(mode) {
+  chatMode = mode;
+  document.getElementById('tabAI').classList.toggle('active', mode === 'ai');
+  document.getElementById('tabAdmin').classList.toggle('active', mode === 'admin');
+  document.getElementById('chatMessages').innerHTML = '';
+  document.getElementById('chatSuggestions').style.display = mode === 'ai' ? '' : 'none';
+
+  if (mode === 'admin') {
+    document.getElementById('chatInput').placeholder = 'Type a message to admin…';
+    document.getElementById('chatSubtitle').textContent = 'Live chat with admin';
+    renderUserAdminThread();
+    // Clear badge — user is now viewing admin replies
+    const badge = document.getElementById('chatBadge');
+    if (badge) { badge.textContent = ''; badge.classList.remove('show'); }
+  } else {
+    document.getElementById('chatInput').placeholder = 'Ask anything about your ticket…';
+    document.getElementById('chatSubtitle').textContent = 'AI-powered support · Always available';
+    initChatGreeting();
+  }
+};
+
+// Render the full two-way conversation thread for citizen/staff side
+function renderUserAdminThread() {
+  const msgs = document.getElementById('chatMessages');
+  if (!msgs || !currentUser) return;
+  msgs.innerHTML = '';
+
+  // Get all messages from this user and admin replies to this user
+  const myMsgs = DB.chatMessages.filter(m => m.from_user_id === currentUser.id && !m.is_admin);
+  const adminReplies = DB.chatMessages.filter(m => m.to_user_id === currentUser.id && m.is_admin);
+  const thread = [...myMsgs, ...adminReplies].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  if (thread.length === 0) {
+    const div = document.createElement('div');
+    div.innerHTML = `<div class="chat-msg-label">🟢 Admin Chat</div>
+      <div class="chat-msg bot">Welcome to Admin Live Chat. Type your message below and the admin will respond here. You can reference your ticket number for faster assistance.</div>`;
+    msgs.appendChild(div);
+  } else {
+    thread.forEach(m => {
+      const div = document.createElement('div');
+      if (m.is_admin) {
+        div.innerHTML = `<div class="chat-msg-label">🟢 Admin — ${new Date(m.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="chat-msg admin-reply">${m.message.replace(/\n/g,'<br>')}</div>`;
+      } else {
+        div.innerHTML = `<div class="chat-msg-label right">You — ${new Date(m.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="chat-msg user" style="align-self:flex-end;">${m.message.replace(/\n/g,'<br>')}</div>`;
+      }
+      msgs.appendChild(div);
+    });
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+window.sendAdminChatMessage = function(text) {
+  DB_SERVICE.sendChatMessage(text, false);
+  // Show notification badge on admin side
+  updateAdminChatBadge();
+  // Re-render the thread so the sent message appears immediately
+  renderUserAdminThread();
+};
+
+// Admin side: reply in chat
+window.adminReplyChat = function(userId, replyText) {
+  if (!replyText.trim()) return;
+  // Store admin reply linked to that user
+  DB.chatMessages.push({
+    id: DB.nextChatMsgId++,
+    from_user_id: 'admin_1',
+    from_name: currentUser.name,
+    to_user_id: userId,
+    message: replyText,
+    timestamp: new Date().toISOString(),
+    is_admin: true,
+    role: 'admin',
+  });
+};
+
+// ============================================================================
+// UI HELPERS
+// ============================================================================
+const STATUS = { PENDING: 'Pending', IN_PROGRESS: 'In Progress', RESOLVED: 'Resolved', CLOSED: 'Closed' };
+let showLogin = true, activeRole = 'external';
+let citizenActiveTab = 'lodge', citizenStatusTab = 'all';
+let staffActiveTab = 'lodge', staffStatusTab = 'all';
+let adminActiveTab = 'tickets';
+let openTicketTabs = new Set();
+const app = document.getElementById('app');
+
+function showLoading(msg='Loading…') {
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingOverlay').style.display = 'flex';
+}
+function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+function statusClass(s) { return {Pending:'status-Pending','In Progress':'status-InProgress',Resolved:'status-Resolved',Closed:'status-Closed'}[s]||'status-Pending'; }
+function statusEmoji(s) { return {Pending:'⏳','In Progress':'🔵',Resolved:'✅',Closed:'🔒'}[s]||'⏳'; }
+function nextActions(s) {
+  if (s===STATUS.PENDING) return [{label:'Open Ticket',next:STATUS.IN_PROGRESS,cls:'btn-open'}];
+  if (s===STATUS.IN_PROGRESS) return [{label:'Mark Resolved',next:STATUS.RESOLVED,cls:'btn-resolve'},{label:'Close Ticket',next:STATUS.CLOSED,cls:'btn-close-ticket'}];
+  if (s===STATUS.RESOLVED) return [{label:'Close Ticket',next:STATUS.CLOSED,cls:'btn-close-ticket'}];
+  return [];
+}
+function eyeSVG(v) { return v ? `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`; }
+function chevronSVG() { return `<svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`; }
+function avatarLetter(n) { return (n||'?')[0].toUpperCase(); }
+function roleColor(r) { return {admin:'#7c3aed',staff:'#1e3a3a',external:'#10b981'}[r]||'#64748b'; }
+function roleLabel(r) { return {admin:'Admin',staff:'Staff',external:'Citizen'}[r]||r; }
+function statusCounts(tickets) {
+  return { all:tickets.length, pending:tickets.filter(t=>t.status===STATUS.PENDING).length, inProgress:tickets.filter(t=>t.status===STATUS.IN_PROGRESS).length, resolved:tickets.filter(t=>t.status===STATUS.RESOLVED).length, closed:tickets.filter(t=>t.status===STATUS.CLOSED).length };
+}
+function buildStatusTabs(counts, activeTab, setter) {
+  return [{key:'all',label:'All',emoji:'📋',count:counts.all},{key:'pending',label:'Pending',emoji:'⏳',count:counts.pending},{key:'inProgress',label:'In Progress',emoji:'🔵',count:counts.inProgress},{key:'resolved',label:'Resolved',emoji:'✅',count:counts.resolved},{key:'closed',label:'Closed',emoji:'🔒',count:counts.closed}]
+    .map(t=>`<button class="sub-tab ${activeTab===t.key?'sub-tab-active':''}" onclick="${setter}('${t.key}')">${t.emoji} ${t.label} <span class="sub-tab-count">${t.count}</span></button>`).join('');
+}
+function userProfileCard(user, ticketCount) {
+  const rc = roleColor(user.role);
+  return `<div class="user-profile-card"><div class="user-avatar">${avatarLetter(user.name)}</div><div class="user-info"><div class="user-name">${user.name}</div><div class="user-meta"><span style="background:${rc}40;color:${rc};padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">${roleLabel(user.role)}</span> &nbsp;•&nbsp; ${ticketCount} ticket${ticketCount!==1?'s':''}</div></div><div class="db-indicator"><span class="db-dot"></span>Active</div></div>`;
+}
+
+// Display tickets for citizen/staff view (with admin response visible)
+function displaySimpleTickets(tickets, containerId) {
+  const c = document.getElementById(containerId); if (!c) return;
+  if (tickets.length===0) { c.innerHTML='<div style="text-align:center;padding:40px;color:#64748b;">No tickets found.</div>'; return; }
+  c.innerHTML = tickets.map(t => {
+    const priColor = t.priority==='High'?'#fee2e2;color:#b91c1c':t.priority==='Medium'?'#fff3e3;color:#ea6c00':'#d1fae5;color:#065f46';
+    const adminResponseHtml = t.admin_response
+      ? `<div class="admin-response-box">
+           <div class="response-label">✅ Admin Response</div>
+           <div class="response-text">${t.admin_response}</div>
+           <div class="response-meta">Responded by ${t.admin_response_by} on ${new Date(t.admin_response_at).toLocaleString('en-ZA')}</div>
+         </div>`
+      : `<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:12px;padding:10px 14px;margin-top:10px;font-size:0.82rem;color:#92400e;">⏳ Awaiting admin response — we will update you shortly.</div>`;
+    return `<div class="ticket-item priority-${t.priority}">
+      <div class="ticket-item-header">
+        <span class="ticket-id">🎫 ${t.ticket_number}</span>
+        <span class="priority-pill" style="background:${priColor}">${t.priority}</span>
+        <span class="status-pill ${statusClass(t.status)}">${statusEmoji(t.status)} ${t.status}</span>
+      </div>
+      <div style="font-size:0.9rem;display:grid;gap:6px;">
+        <div><strong>📍 Station:</strong> ${t.station_name}</div>
+        <div><strong>📂 Department:</strong> ${t.department_name}</div>
+        <div><strong>📝 Issue:</strong> ${t.description.substring(0,120)}${t.description.length>120?'...':''}</div>
+        <div><strong>🤖 AI Routing:</strong> ${t.ai_reason||'Keyword matched'}</div>
+        <div style="font-size:0.75rem;color:#64748b;">📅 ${new Date(t.opened_at).toLocaleString('en-ZA')}</div>
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="btn-view-resp" onclick="window.viewTicketResponses('${t.ticket_number}')">💬 View Responses</button>
+        <button class="btn-delete-ticket" onclick="window.deleteTicketConfirm('${t.ticket_number}')">🗑 Delete Ticket</button>
+        ${t.admin_response ? '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">✅ Response available</span>' : '<span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">⏳ Awaiting response</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function applyAndDisplay(allTickets, statusTab, searchInputId, listId) {
+  const statusMap = {pending:STATUS.PENDING,inProgress:STATUS.IN_PROGRESS,resolved:STATUS.RESOLVED,closed:STATUS.CLOSED};
+  const filter = t => {
+    const q = (document.getElementById(searchInputId)?.value||'').toLowerCase();
+    const matchQ = !q||[t.ticket_number,t.station_name,t.description,t.department_name].some(v=>(v||'').toLowerCase().includes(q));
+    const matchS = statusTab==='all'||t.status===statusMap[statusTab];
+    return matchQ&&matchS;
+  };
+  displaySimpleTickets(allTickets.filter(filter), listId);
+  document.getElementById(searchInputId)?.addEventListener('input', () => displaySimpleTickets(allTickets.filter(filter), listId));
+}
+
+// ============================================================================
+// RENDER: AUTH
+// ============================================================================
+function renderAuth() {
+  app.innerHTML = `
+  <div class="role-selector">
+    <button class="role-btn ${activeRole==='external'?'active':''}" onclick="window.setRole('external')">👤 Citizen</button>
+    <button class="role-btn ${activeRole==='staff'?'active':''}" onclick="window.setRole('staff')">👮 Staff</button>
+    <button class="role-btn ${activeRole==='admin'?'active':''}" onclick="window.setRole('admin')">🔑 Admin</button>
+  </div>
+  <div class="auth-grid">
+    <div class="card ${showLogin?'':'hidden'}">
+      <h2 style="margin-bottom:24px;">🔐 Login</h2>
+      <div class="form-group"><input type="email" id="loginEmail" placeholder="Email address"></div>
+      <div class="form-group"><div class="password-wrapper"><input type="password" id="loginPassword" placeholder="Password"><button class="eye-btn" id="eyeLogin" onclick="window.togglePwd('loginPassword','eyeLogin')" type="button">${eyeSVG(false)}</button></div></div>
+      <button class="btn btn-primary" onclick="window.handleLogin()">Sign In</button>
+      ${activeRole!=='admin'?`<div class="toggle-link"><a onclick="window.toggleAuth()">Don't have an account? Create one →</a></div>`:''}
+      <div id="loginMsg"></div>
+    </div>
+    <div class="card ${!showLogin?'':'hidden'}">
+      <h2 style="margin-bottom:24px;">📝 Create Account</h2>
+      <div class="form-group"><input type="text" id="signupName" placeholder="Full Name"></div>
+      <div class="form-group"><input type="email" id="signupEmail" placeholder="Email address"></div>
+      <div class="form-group"><div class="password-wrapper"><input type="password" id="signupPassword" placeholder="Password"><button class="eye-btn" id="eyeSignup" onclick="window.togglePwd('signupPassword','eyeSignup')" type="button">${eyeSVG(false)}</button></div></div>
+      <button class="btn btn-secondary" onclick="window.handleSignup()">Create Account</button>
+      <div class="toggle-link"><a onclick="window.toggleAuth()">← Back to Login</a></div>
+      <div id="signupMsg"></div>
+    </div>
+  </div>
+  <div class="card" style="background:#f8fafc;margin-top:16px;">
+    <p style="text-align:center;color:#64748b;font-size:0.85rem;">
+      <strong>Demo Credentials:</strong><br>
+      Citizen: citizen@example.com / citizen123 &nbsp;|&nbsp;
+      Staff: staff@saps.gov.za / staff123 &nbsp;|&nbsp;
+      Admin: admin@saps.gov.za / admin123
+    </p>
+  </div>`;
+}
+
+// ============================================================================
+// RENDER: CITIZEN
+// ============================================================================
+function renderExternalDashboard() {
+  const myTickets = DB_SERVICE.getTickets();
+  app.innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <h2>👋 Welcome, ${currentUser.name}</h2>
+    <button class="btn btn-outline btn-small" onclick="window.logout()" style="width:auto;">🚪 Logout</button>
+  </div>
+  ${userProfileCard(currentUser, myTickets.length)}
+  <div class="tabs">
+    <button class="tab ${citizenActiveTab==='lodge'?'active':''}" onclick="window.setCitizenTab('lodge')">📢 Lodge Complaint</button>
+    <button class="tab ${citizenActiveTab==='mytickets'?'active':''}" onclick="window.setCitizenTab('mytickets')">📋 My Tickets (${myTickets.length})</button>
+  </div>
+  <div id="citizenContent"></div>`;
+  if (citizenActiveTab==='lodge') renderCitizenLodgeForm();
+  else renderCitizenMyTickets();
+}
+
+function renderCitizenLodgeForm() {
+  const c = document.getElementById('citizenContent'); if (!c) return;
+  c.innerHTML = `<div class="card">
+  <h3 style="margin-bottom:20px;">📢 Lodge New Complaint</h3>
+  <div class="form-group"><label>Police Station</label><select id="stationSelect">${DB.stations.map(s=>`<option value="${s.station_name}">${s.station_name}</option>`).join('')}</select></div>
+  <div class="form-group"><label>Complaint Description</label><textarea id="complaintDesc" placeholder="Describe your issue in detail — our AI will automatically route it to the correct department…"></textarea></div>
+  <div class="form-group"><label>Priority</label><select id="prioritySelect"><option value="High">High 🔴</option><option value="Medium" selected>Medium 🟡</option><option value="Low">Low 🟢</option></select></div>
+  <button class="btn btn-primary" onclick="window.submitTicket()">✅ Submit Ticket</button>
+  <div id="ticketMsg"></div>
+  </div>`;
+}
+
+function renderCitizenMyTickets() {
+  const c = document.getElementById('citizenContent'); if (!c) return;
+  const tickets = DB_SERVICE.getTickets();
+  const counts = statusCounts(tickets);
+  c.innerHTML = `<div class="sub-tabs">${buildStatusTabs(counts,citizenStatusTab,'window.setCitizenStatusTab')}</div>
+  <div class="ticket-section" style="margin-top:0;"><div class="search-bar"><input type="text" id="citizenSearch" placeholder="🔍 Search tickets…"><button class="btn btn-outline btn-small" onclick="window.renderCitizenMyTickets()" style="width:auto;">Clear</button></div><div id="citizenTicketList" class="ticket-list"></div></div>`;
+  applyAndDisplay(tickets, citizenStatusTab, 'citizenSearch', 'citizenTicketList');
+}
+
+// ============================================================================
+// RENDER: STAFF
+// ============================================================================
+function renderStaffDashboard() {
+  const myTickets = DB_SERVICE.getTickets();
+  app.innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <h2>👮 Staff Dashboard — ${currentUser.name}</h2>
+    <button class="btn btn-outline btn-small" onclick="window.logout()" style="width:auto;">🚪 Logout</button>
+  </div>
+  ${userProfileCard(currentUser, myTickets.length)}
+  <div class="tabs">
+    <button class="tab ${staffActiveTab==='lodge'?'active':''}" onclick="window.setStaffTab('lodge')">📝 Lodge New Ticket</button>
+    <button class="tab ${staffActiveTab==='mytickets'?'active':''}" onclick="window.setStaffTab('mytickets')">📋 My Tickets (${myTickets.length})</button>
+  </div>
+  <div id="staffContent"></div>`;
+  if (staffActiveTab==='lodge') renderStaffLodgeForm();
+  else renderStaffMyTickets();
+}
+
+function renderStaffLodgeForm() {
+  const c = document.getElementById('staffContent'); if (!c) return;
+  c.innerHTML = `<div class="card"><h3 style="margin-bottom:20px;">📝 Lodge Ticket as Staff Member</h3>
+  <div class="form-group"><label>Police Station</label><select id="staffStationSelect">${DB.stations.map(s=>`<option value="${s.station_name}">${s.station_name}</option>`).join('')}</select></div>
+  <div class="form-group"><label>Complaint Description</label><textarea id="staffComplaintDesc" rows="4" placeholder="Describe the issue in detail — AI will route to the correct department…"></textarea></div>
+  <div class="form-group"><label>Priority</label><select id="staffPrioritySelect"><option value="High">High 🔴</option><option value="Medium" selected>Medium 🟡</option><option value="Low">Low 🟢</option></select></div>
+  <button class="btn btn-primary" onclick="window.submitStaffTicket()">✅ Submit Ticket</button>
+  <div id="staffTicketMsg"></div></div>`;
+}
+
+function renderStaffMyTickets() {
+  const c = document.getElementById('staffContent'); if (!c) return;
+  const tickets = DB_SERVICE.getTickets();
+  const counts = statusCounts(tickets);
+  c.innerHTML = `<div class="sub-tabs">${buildStatusTabs(counts,staffStatusTab,'window.setStaffStatusTab')}</div>
+  <div class="ticket-section" style="margin-top:0;"><div class="search-bar"><input type="text" id="staffMySearch" placeholder="🔍 Search my tickets…"><button class="btn btn-outline btn-small" onclick="window.renderStaffMyTickets()" style="width:auto;">Clear</button></div><div id="staffMyTicketList" class="ticket-list"></div></div>`;
+  applyAndDisplay(tickets, staffStatusTab, 'staffMySearch', 'staffMyTicketList');
+}
+
+// ============================================================================
+// RENDER: ADMIN
+// ============================================================================
+function renderAdminDashboard() {
+  try {
+    const stats = DB_SERVICE.getDashboardStats();
+    const tickets = DB_SERVICE.getAllTickets();
+    app.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>🔑 Admin Dashboard</h2>
+        <span class="admin-header-badge">Supervisor</span>
+        <span class="db-indicator"><span class="db-dot"></span>Live Data</span>
+      </div>
+      <button class="btn btn-outline btn-small" onclick="window.logout()" style="width:auto;">🚪 Logout</button>
+    </div>
+    ${userProfileCard(currentUser, stats.stats.total_tickets)}
+    <div class="stats-grid">
+      <div class="stat-card admin-stat"><div class="stat-number">${stats.stats.total_tickets}</div><div class="stat-label">Total Tickets</div></div>
+      <div class="stat-card pending-stat"><div class="stat-number">${stats.stats.pending}</div><div class="stat-label">⏳ Pending</div></div>
+      <div class="stat-card progress-stat"><div class="stat-number">${stats.stats.in_progress}</div><div class="stat-label">🔵 In Progress</div></div>
+      <div class="stat-card resolved-stat"><div class="stat-number">${stats.stats.resolved}</div><div class="stat-label">✅ Resolved</div></div>
+      <div class="stat-card"><div class="stat-number">${stats.stats.closed}</div><div class="stat-label">🔒 Closed</div></div>
+    </div>
+    <div class="stats-grid" style="margin-bottom:24px;">
+      ${stats.departmentStats.map(d=>`<div class="stat-card" style="background:linear-gradient(135deg,#2d3748,#1a202c);"><div class="stat-number">${d.closure_rate}%</div><div class="stat-label">${d.dept_name} Closure</div></div>`).join('')}
+    </div>
+    <div class="tabs">
+      <button class="tab admin-tab ${adminActiveTab==='tickets'?'active':''}" onclick="window.setAdminTab('tickets')">🎟️ All Tickets</button>
+      <button class="tab admin-tab ${adminActiveTab==='users'?'active':''}" onclick="window.setAdminTab('users')">👥 Manage Users</button>
+      <button class="tab admin-tab ${adminActiveTab==='chat'?'active':''}" onclick="window.setAdminTab('chat')">💬 User Messages <span style="background:#dc2626;color:white;border-radius:20px;padding:1px 8px;font-size:0.72rem;font-weight:700;margin-left:6px;">${DB.chatMessages.filter(m=>!m.is_admin).length}</span></button>
+    </div>
+    <div id="adminContent"></div>`;
+    if (adminActiveTab==='tickets') renderAdminTickets(tickets);
+    else if (adminActiveTab==='users') renderAdminUsers();
+    else renderAdminChat();
+  } catch(e) { app.innerHTML=`<div class="alert alert-error">Failed to load dashboard: ${e.message}</div>`; }
+}
+
+function renderAdminTickets(tickets) {
+  const c = document.getElementById('adminContent'); if (!c) return;
+  c.innerHTML = `<div class="ticket-section" style="margin-top:0;"><div class="search-bar">
+  <input type="text" id="adminSearch" placeholder="🔍 Search by ID, station, department, person…">
+  <select id="adminStatusFilter"><option value="">All Statuses</option><option>Pending</option><option>In Progress</option><option>Resolved</option><option>Closed</option></select>
+  <button class="btn btn-outline btn-small" onclick="window.clearAdminSearch()" style="width:auto;">Clear</button>
+  </div><div id="adminTicketList" class="ticket-accordion"></div></div>`;
+  displayAdminTickets(tickets);
+  const applyFilter = () => {
+    const q = document.getElementById('adminSearch').value.toLowerCase();
+    const st = document.getElementById('adminStatusFilter').value;
+    displayAdminTickets(tickets.filter(t=>(!q||[t.ticket_number,t.station_name,t.department_name,t.full_name,t.description].some(v=>(v||'').toLowerCase().includes(q)))&&(!st||t.status===st)));
+  };
+  document.getElementById('adminSearch').addEventListener('input', applyFilter);
+  document.getElementById('adminStatusFilter').addEventListener('change', applyFilter);
+}
+
+function displayAdminTickets(tickets) {
+  const c = document.getElementById('adminTicketList'); if (!c) return;
+  if (tickets.length===0) { c.innerHTML='<div style="text-align:center;padding:40px;color:#64748b;">No tickets found.</div>'; return; }
+  const order = {Pending:0,'In Progress':1,Resolved:2,Closed:3};
+  const sorted = [...tickets].sort((a,b)=>(order[a.status]??99)-(order[b.status]??99));
+  c.innerHTML = sorted.map(t => {
+    const isOpen = openTicketTabs.has(t.ticket_number);
+    const priColor = t.priority==='High'?'#fee2e2;color:#b91c1c':t.priority==='Medium'?'#fff3e3;color:#ea6c00':'#d1fae5;color:#065f46';
+    const actions = nextActions(t.status);
+
+    const adminResponseSection = t.admin_response
+      ? `<div class="admin-response-box">
+           <div class="response-label">✅ Admin Response Already Sent</div>
+           <div class="response-text">${t.admin_response}</div>
+           <div class="response-meta">By ${t.admin_response_by} on ${new Date(t.admin_response_at).toLocaleString('en-ZA')}</div>
+         </div>
+         <div class="admin-respond-form" style="margin-top:10px;">
+           <p style="font-size:0.8rem;color:#64748b;margin-bottom:8px;font-weight:600;">✏️ Update your response:</p>
+           <textarea id="resp-${t.ticket_number}" placeholder="Update your response to this ticket…">${t.admin_response}</textarea>
+           <div class="respond-actions">
+             <button class="btn-respond" onclick="window.submitAdminResponse('${t.ticket_number}')">💬 Update Response</button>
+           </div>
+         </div>`
+      : `<div class="admin-respond-form">
+           <p style="font-size:0.8rem;color:#64748b;margin-bottom:8px;font-weight:600;">📝 Respond to this ticket:</p>
+           <textarea id="resp-${t.ticket_number}" placeholder="Type your official response to the user's complaint…"></textarea>
+           <div class="respond-actions">
+             <button class="btn-respond" onclick="window.submitAdminResponse('${t.ticket_number}')">💬 Send Response</button>
+             <span style="font-size:0.75rem;color:#94a3b8;">Response visible to citizen/staff</span>
+           </div>
+         </div>`;
+
+    return `<div class="ticket-tab priority-${t.priority} ${isOpen?'expanded':''}" id="tab-${t.ticket_number}">
+    <div class="ticket-tab-header" onclick="window.toggleTab('${t.ticket_number}')">
+      <div class="ticket-tab-left">
+        <span class="ticket-id">🎫 ${t.ticket_number}</span>
+        <span class="priority-pill" style="background:${priColor}">${t.priority}</span>
+        <span class="status-pill ${statusClass(t.status)}">${statusEmoji(t.status)} ${t.status}</span>
+        <span style="font-size:0.82rem;color:#64748b;">📂 ${t.department_name} &nbsp;·&nbsp; 👤 ${t.full_name}</span>
+        ${t.admin_response?'<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;">✅ Responded</span>':'<span style="background:#fef9c3;color:#92400e;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;">⏳ Awaiting Response</span>'}
+      </div>
+      <div class="ticket-tab-right">
+        <span style="font-size:0.75rem;color:#94a3b8;">${new Date(t.opened_at).toLocaleDateString('en-ZA')}</span>
+        ${chevronSVG()}
+      </div>
+    </div>
+    <div class="ticket-tab-body ${isOpen?'open':''}">
+      <div class="ticket-body-grid">
+        <div><div class="field-label">📍 Station</div><div class="field-value">${t.station_name}</div></div>
+        <div><div class="field-label">🗓 Date Lodged</div><div class="field-value">${new Date(t.opened_at).toLocaleString('en-ZA')}</div></div>
+        <div><div class="field-label">👤 Submitted By</div><div class="field-value">${t.full_name}</div></div>
+        <div><div class="field-label">🎯 Confidence</div><div class="field-value">${Math.round((t.ai_confidence||0)*100)}%</div></div>
+        <div class="full-width"><div class="field-label">📝 Description</div><div class="field-value">${t.description}</div></div>
+        <div class="full-width"><div class="field-label">🤖 AI Routing Reason</div><div class="field-value">${t.ai_reason||'Keyword matched'}</div></div>
+        ${t.resolved_at?`<div><div class="field-label">✅ Resolved At</div><div class="field-value">${new Date(t.resolved_at).toLocaleString('en-ZA')}</div></div>`:''}
+        ${t.closed_at?`<div><div class="field-label">🔒 Closed At</div><div class="field-value">${new Date(t.closed_at).toLocaleString('en-ZA')}</div></div>`:''}
+      </div>
+      ${actions.length?`<div class="ticket-actions"><span class="action-label">Status:</span>${actions.map(a=>`<button class="${a.cls}" onclick="window.advanceStatus('${t.ticket_number}','${a.next}')">${a.label}</button>`).join('')}<button class="btn-delete-ticket" onclick="window.deleteTicketConfirm('${t.ticket_number}')">🗑 Delete</button></div>`:`<div class="ticket-actions"><span style="font-size:0.82rem;color:#64748b;font-weight:600;">🔒 Ticket closed.</span><button class="btn-delete-ticket" onclick="window.deleteTicketConfirm('${t.ticket_number}')">🗑 Delete</button></div>`}
+      ${adminResponseSection}
+    </div></div>`;
+  }).join('');
+}
+
+function renderAdminUsers() {
+  const c = document.getElementById('adminContent'); if (!c) return;
+  const users = DB_SERVICE.getUsers();
+  const tickets = DB_SERVICE.getAllTickets();
+  c.innerHTML = `<div class="card"><h3 style="margin-bottom:20px;">👥 Registered Users (${users.length})</h3>
+  <div style="overflow-x:auto;"><table class="user-table"><thead><tr><th>Avatar</th><th>Name</th><th>Email</th><th>Role</th><th>Tickets</th><th>Joined</th><th>Actions</th></tr></thead><tbody>
+  ${users.map(u => {
+    const count = tickets.filter(t=>t.user_id===u.id).length;
+    const rc = roleColor(u.role);
+    const joined = u.created_at?new Date(u.created_at).toLocaleDateString('en-ZA'):'—';
+    return `<tr><td><div style="width:36px;height:36px;border-radius:50%;background:${rc};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:0.9rem;">${avatarLetter(u.full_name)}</div></td><td style="font-weight:600;">${u.full_name}</td><td style="color:#64748b;">${u.email}</td><td><span class="role-tag" style="background:${rc}20;color:${rc};">${roleLabel(u.role)}</span></td><td>${count}</td><td style="font-size:0.82rem;color:#94a3b8;">${joined}</td><td>${u.id!==currentUser.id?`<button class="btn-danger" onclick="window.deleteUser('${u.id}')">🗑 Delete</button>`:'<span style="font-size:0.75rem;color:#94a3b8;">(you)</span>'}</td></tr>`;
+  }).join('')}
+  </tbody></table></div></div>`;
+}
+
+function renderAdminChat() {
+  const c = document.getElementById('adminContent'); if (!c) return;
+  const userMessages = DB.chatMessages.filter(m => !m.is_admin);
+  const msgCount = userMessages.length;
+  c.innerHTML = `<div class="card" style="text-align:center;padding:40px;">
+    <div style="font-size:3.5rem;margin-bottom:16px;">💬</div>
+    <h3 style="color:#1e293b;margin-bottom:8px;">Live Chat with Citizens &amp; Staff</h3>
+    <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto;">
+      Use the <strong>purple chat button</strong> (bottom-left of the screen) to open the admin live chat. 
+      You can see all user messages there and reply directly in a chatbot-style interface.
+    </p>
+    ${msgCount > 0
+      ? `<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:16px;padding:14px;margin-bottom:20px;font-size:0.9rem;color:#92400e;font-weight:600;">📨 ${msgCount} message${msgCount!==1?'s':''} waiting for your reply</div>`
+      : `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:16px;padding:14px;margin-bottom:20px;font-size:0.9rem;color:#15803d;font-weight:600;">✅ No pending messages</div>`
+    }
+    <button class="btn btn-primary" style="width:auto;padding:12px 28px;" onclick="window.openAdminChatFromTab()">
+      💬 Open Live Chat Widget
+    </button>
+  </div>`;
+}
+
+// ============================================================================
+// GLOBAL EVENT HANDLERS
+// ============================================================================
+window.setRole = r => { activeRole = r; renderAuth(); };
+window.toggleAuth = () => { showLogin = !showLogin; renderAuth(); };
+window.setCitizenTab = t => { citizenActiveTab = t; renderExternalDashboard(); };
+window.setCitizenStatusTab = t => { citizenStatusTab = t; renderCitizenMyTickets(); };
+window.setStaffTab = t => { staffActiveTab = t; renderStaffDashboard(); };
+window.setStaffStatusTab = t => { staffStatusTab = t; renderStaffMyTickets(); };
+window.setAdminTab = t => { adminActiveTab = t; renderAdminDashboard(); };
+window.renderCitizenMyTickets = renderCitizenMyTickets;
+window.renderStaffMyTickets = renderStaffMyTickets;
+
+window.openAdminChatFromTab = function() {
+  if (!adminChatOpen) window.toggleAdminChat();
+};
+
+window.togglePwd = (inputId, btnId) => {
+  const inp = document.getElementById(inputId), btn = document.getElementById(btnId);
+  const h = inp.type === 'password';
+  inp.type = h ? 'text' : 'password';
+  btn.innerHTML = eyeSVG(h);
+};
+
+window.toggleTab = ticketId => {
+  if (openTicketTabs.has(ticketId)) openTicketTabs.delete(ticketId);
+  else openTicketTabs.add(ticketId);
+  const tab = document.getElementById(`tab-${ticketId}`);
+  const body = tab.querySelector('.ticket-tab-body');
+  tab.classList.toggle('expanded', openTicketTabs.has(ticketId));
+  body.classList.toggle('open', openTicketTabs.has(ticketId));
+};
+
+window.deleteTicketConfirm = (ticketNumber) => {
+  if (!confirm(`Are you sure you want to delete ticket ${ticketNumber}? This cannot be undone.`)) return;
+  showLoading('🗑 Deleting ticket…');
+  try {
+    DB_SERVICE.deleteTicket(ticketNumber);
+    openTicketTabs.delete(ticketNumber);
+    hideLoading();
+    if (currentUser.role === 'admin') renderAdminDashboard();
+    else if (currentUser.role === 'staff') renderStaffMyTickets();
+    else renderCitizenMyTickets();
+  } catch(e) { hideLoading(); alert('Failed to delete ticket: ' + e.message); }
+};
+
+window.advanceStatus = (ticketNumber, newStatus) => {
+  showLoading('💾 Updating status…');
+  try {
+    DB_SERVICE.updateTicketStatus(ticketNumber, newStatus);
+    if (newStatus === STATUS.CLOSED) openTicketTabs.delete(ticketNumber);
+    hideLoading();
+    renderAdminDashboard();
+  } catch(e) { hideLoading(); alert('Failed to update status: ' + e.message); }
+};
+
+window.submitAdminResponse = ticketNumber => {
+  const textarea = document.getElementById(`resp-${ticketNumber}`);
+  const response = textarea?.value?.trim();
+  if (!response) { alert('Please enter a response before submitting.'); return; }
+  showLoading('💾 Saving response…');
+  try {
+    DB_SERVICE.addAdminResponse(ticketNumber, response);
+    hideLoading();
+    // Show success notification
+    const btn = textarea.closest('.admin-respond-form').querySelector('.btn-respond');
+    if (btn) { btn.textContent = '✅ Saved!'; btn.style.background = 'linear-gradient(135deg,#10b981,#34d399)'; setTimeout(() => renderAdminDashboard(), 1200); }
+  } catch(e) { hideLoading(); alert('Failed to save response: ' + e.message); }
+};
+
+window.submitAdminChatReply = userId => {
+  const textarea = document.getElementById(`adminChat-${userId}`);
+  const text = textarea?.value?.trim();
+  if (!text) { alert('Please type a reply.'); return; }
+  window.adminReplyChat(userId, text);
+  textarea.value = '';
+  renderAdminChat();
+};
+
+window.clearAdminSearch = () => {
+  document.getElementById('adminSearch').value = '';
+  document.getElementById('adminStatusFilter').value = '';
+  displayAdminTickets(DB_SERVICE.getAllTickets());
+};
+
+window.handleLogin = async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  showLoading('🔐 Authenticating…');
+  try {
+    // Try real backend first to get JWT token (needed by AI chatbot)
+    let backendToken = null;
+    try {
+      const apiRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role: activeRole }),
+      });
+      if (apiRes.ok) {
+        const apiData = await apiRes.json();
+        backendToken = apiData.token;
+      }
+    } catch(_) { /* backend not available — fall through to in-memory */ }
+
+    // Always sync in-memory store for UI state
+    DB_SERVICE.login(email, password, activeRole);
+    currentUser = DB_SERVICE.getCurrentUser();
+
+    // Store JWT for chatbot API calls
+    if (backendToken) sessionStorage.setItem('saps_token', backendToken);
+
+    staffActiveTab = 'lodge'; citizenActiveTab = 'lodge';
+    citizenStatusTab = 'all'; staffStatusTab = 'all';
+    adminActiveTab = 'tickets'; openTicketTabs.clear();
+    chatHistory = [];
+    hideLoading();
+    render();
+    // Show chatbot after login
+    setTimeout(() => {
+      if (currentUser.role === 'admin') {
+        document.getElementById('adminChatWidget').classList.add('visible');
+        updateAdminChatBadge();
+      } else {
+        document.getElementById('chatWidget').classList.add('visible');
+      }
+    }, 500);
+  } catch(e) { hideLoading(); document.getElementById('loginMsg').innerHTML=`<div class="alert alert-error">❌ ${e.message}</div>`; }
+};
+
+window.handleSignup = () => {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  if (!name||!email||!password) { document.getElementById('signupMsg').innerHTML='<div class="alert alert-error">Please fill in all fields</div>'; return; }
+  showLoading('💾 Creating your account…');
+  try {
+    DB_SERVICE.register(name, email, password, activeRole);
+    hideLoading();
+    document.getElementById('signupMsg').innerHTML='<div class="alert alert-success">✅ Account created! Please login.</div>';
+    setTimeout(() => { showLogin = true; renderAuth(); }, 1800);
+  } catch(e) { hideLoading(); document.getElementById('signupMsg').innerHTML=`<div class="alert alert-error">❌ ${e.message}</div>`; }
+};
+
+window.submitTicket = () => {
+  const stationName = document.getElementById('stationSelect').value;
+  const description = document.getElementById('complaintDesc').value.trim();
+  const priority = document.getElementById('prioritySelect').value;
+  if (!description) { document.getElementById('ticketMsg').innerHTML='<div class="alert alert-error">Please describe your complaint</div>'; return; }
+  const msgDiv = document.getElementById('ticketMsg');
+  msgDiv.innerHTML = '<div class="alert ai-loading">🤖 AI is analysing your complaint and routing to the correct department…</div>';
+  setTimeout(() => {
+    try {
+      const station = DB.stations.find(s=>s.station_name===stationName) || DB.stations[0];
+      const result = DB_SERVICE.createTicket(station.id, description, priority);
+      msgDiv.innerHTML = `<div class="alert alert-success">✅ Ticket <strong>${result.ticketNumber}</strong> lodged!<br>Routed to <strong>${result.departmentName}</strong> (${result.department})<br>AI Confidence: ${Math.round(result.confidence*100)}% · Status: ⏳ Pending — awaiting admin review.</div>`;
+      document.getElementById('complaintDesc').value = '';
+      setTimeout(() => { citizenActiveTab = 'mytickets'; citizenStatusTab = 'all'; renderExternalDashboard(); }, 2800);
+    } catch(e) { msgDiv.innerHTML=`<div class="alert alert-error">❌ Failed to submit ticket: ${e.message}</div>`; }
+  }, 1200);
+};
+
+window.submitStaffTicket = () => {
+  const stationName = document.getElementById('staffStationSelect').value;
+  const description = document.getElementById('staffComplaintDesc').value.trim();
+  const priority = document.getElementById('staffPrioritySelect').value;
+  if (!description) { document.getElementById('staffTicketMsg').innerHTML='<div class="alert alert-error">Please describe the complaint</div>'; return; }
+  const msgDiv = document.getElementById('staffTicketMsg');
+  msgDiv.innerHTML = '<div class="alert ai-loading">🤖 AI is analysing and routing to the correct department…</div>';
+  setTimeout(() => {
+    try {
+      const station = DB.stations.find(s=>s.station_name===stationName) || DB.stations[0];
+      const result = DB_SERVICE.createTicket(station.id, description, priority);
+      msgDiv.innerHTML = `<div class="alert alert-success">✅ Ticket <strong>${result.ticketNumber}</strong> lodged!<br>Routed to <strong>${result.departmentName}</strong> · AI Confidence: ${Math.round(result.confidence*100)}% · Status: ⏳ Pending</div>`;
+      document.getElementById('staffComplaintDesc').value = '';
+      setTimeout(() => { staffActiveTab = 'mytickets'; renderStaffDashboard(); }, 2500);
+    } catch(e) { msgDiv.innerHTML=`<div class="alert alert-error">❌ Failed to submit ticket: ${e.message}</div>`; }
+  }, 1200);
+};
+
+window.deleteUser = userId => {
+  if (!confirm('Are you sure you want to delete this user?')) return;
+  showLoading('🗑 Removing user…');
+  try { DB_SERVICE.deleteUser(userId); hideLoading(); renderAdminDashboard(); }
+  catch(e) { hideLoading(); alert('Failed to delete user: ' + e.message); }
+};
+
+window.logout = () => {
+  DB_SERVICE.logout(); currentUser = null; sessionStorage.removeItem('saps_token');
+  chatHistory = []; chatOpen = false; adminChatOpen = false; adminChatActiveUser = null;
+  citizenActiveTab = 'lodge'; citizenStatusTab = 'all';
+  staffActiveTab = 'lodge'; staffStatusTab = 'all';
+  openTicketTabs.clear();
+  // Hide chatbots
+  document.getElementById('chatWidget').classList.remove('visible');
+  document.getElementById('chatPanel').classList.remove('open');
+  document.getElementById('adminChatWidget').classList.remove('visible');
+  document.getElementById('adminChatPanelWidget').classList.remove('open');
+  render();
+};
+
+// ============================================================================
+// ADMIN CHATBOT WIDGET
+// ============================================================================
+let adminChatOpen = false;
+let adminChatActiveUser = null; // currently selected user tab
+let adminChatLastRead = {}; // uid -> ISO timestamp of last message admin has seen
+
+window.toggleAdminChat = function() {
+  adminChatOpen = !adminChatOpen;
+  const panel = document.getElementById('adminChatPanelWidget');
+  const btn = document.getElementById('adminChatToggleBtn');
+  if (adminChatOpen) {
+    panel.classList.add('open');
+    btn.innerHTML = '✕<span class="admin-chat-badge" id="adminChatBadge"></span>';
+    refreshAdminChatWidget();
+    setTimeout(() => document.getElementById('adminChatInput')?.focus(), 200);
+  } else {
+    panel.classList.remove('open');
+    btn.innerHTML = '💬<span class="admin-chat-badge" id="adminChatBadge"></span>';
+    updateAdminChatBadge();
+  }
+};
+
+function updateAdminChatBadge() {
+  const badge = document.getElementById('adminChatBadge');
+  if (!badge) return;
+  const unread = DB.chatMessages.filter(m => !m.is_admin).length;
+  if (unread > 0) { badge.textContent = unread; badge.classList.add('show'); }
+  else { badge.classList.remove('show'); }
+}
+
+function refreshAdminChatWidget() {
+  const userMessages = DB.chatMessages.filter(m => !m.is_admin);
+  const senderIds = [...new Set(userMessages.map(m => m.from_user_id))];
+  const tabsEl = document.getElementById('adminChatUserTabs');
+  const msgsEl = document.getElementById('adminChatMessages');
+  if (!tabsEl || !msgsEl) return;
+
+  if (senderIds.length === 0) {
+    tabsEl.innerHTML = '';
+    msgsEl.innerHTML = '<div class="achat-no-users">💬 No user messages yet.<br><span style="font-size:0.8rem;margin-top:8px;display:block;">When citizens or staff send messages via "Chat with Admin", they appear here.</span></div>';
+    document.getElementById('adminChatInput').disabled = true;
+    document.getElementById('adminChatSendBtn').disabled = true;
+    return;
+  }
+
+  document.getElementById('adminChatInput').disabled = false;
+  document.getElementById('adminChatSendBtn').disabled = false;
+
+  if (!adminChatActiveUser || !senderIds.includes(adminChatActiveUser)) {
+    adminChatActiveUser = senderIds[0];
+  }
+  // Mark active user's thread as read up to now
+  adminChatLastRead[adminChatActiveUser] = new Date().toISOString();
+
+  // Build user tabs — unread = user messages newer than admin's last-read marker for that user
+  tabsEl.innerHTML = senderIds.map(uid => {
+    const user = DB.users.find(u => u.id === uid);
+    const name = user?.full_name || uid;
+    const userMsgsForTab = DB.chatMessages.filter(m => m.from_user_id === uid && !m.is_admin);
+    const lastReadTime = adminChatLastRead[uid] || null;
+    const unread = userMsgsForTab.filter(m => !lastReadTime || new Date(m.timestamp) > new Date(lastReadTime)).length;
+    return `<button class="achat-user-tab ${adminChatActiveUser === uid ? 'active' : ''}" onclick="window.selectAdminChatUser('${uid}')">
+      ${name.split(' ')[0]}${unread > 0 ? `<span class="tab-badge">${unread}</span>` : ''}
+    </button>`;
+  }).join('');
+
+  // Show conversation for active user
+  renderAdminChatConversation();
+}
+
+function renderAdminChatConversation() {
+  const msgsEl = document.getElementById('adminChatMessages');
+  if (!msgsEl || !adminChatActiveUser) return;
+  const userMsgs = DB.chatMessages.filter(m => m.from_user_id === adminChatActiveUser && !m.is_admin);
+  const adminReplies = DB.chatMessages.filter(m => m.to_user_id === adminChatActiveUser && m.is_admin);
+  const thread = [...userMsgs, ...adminReplies].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+
+  if (thread.length === 0) {
+    msgsEl.innerHTML = '<div class="achat-no-users">No messages in this conversation yet.</div>';
+    return;
+  }
+
+  msgsEl.innerHTML = thread.map(m => {
+    if (m.is_admin) {
+      return `<div style="display:flex;flex-direction:column;align-items:flex-end;">
+        <div class="achat-msg-label right">You (Admin)</div>
+        <div class="achat-msg-admin">${m.message.replace(/\n/g,'<br>')}</div>
+        <div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;">${new Date(m.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>`;
+    } else {
+      return `<div style="display:flex;flex-direction:column;align-items:flex-start;">
+        <div class="achat-msg-label">${m.from_name}</div>
+        <div class="achat-msg-user">${m.message.replace(/\n/g,'<br>')}</div>
+        <div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;">${new Date(m.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>`;
+    }
+  }).join('');
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+window.selectAdminChatUser = function(uid) {
+  adminChatActiveUser = uid;
+  refreshAdminChatWidget();
+};
+
+window.clearAdminChatConversation = function() {
+  if (!adminChatActiveUser) return;
+  if (!confirm('Clear this conversation? This cannot be undone.')) return;
+  const uid = adminChatActiveUser;
+  DB.chatMessages = DB.chatMessages.filter(m => !(
+    (m.from_user_id === uid && !m.is_admin) ||
+    (m.to_user_id === uid && m.is_admin)
+  ));
+  delete adminChatLastRead[uid];
+  refreshAdminChatWidget();
+  // If that user's chatbot is open on admin tab, refresh their thread too
+  if (chatOpen && chatMode === 'admin' && currentUser?.id === uid) {
+    renderUserAdminThread();
+  }
+};
+
+window.sendAdminWidgetMessage = function() {
+  const input = document.getElementById('adminChatInput');
+  const text = input?.value?.trim();
+  if (!text || !adminChatActiveUser) return;
+  input.value = '';
+  DB.chatMessages.push({
+    id: DB.nextChatMsgId++,
+    from_user_id: currentUser.id,
+    from_name: currentUser.name,
+    to_user_id: adminChatActiveUser,
+    message: text,
+    timestamp: new Date().toISOString(),
+    is_admin: true,
+    role: 'admin',
+  });
+  // Refresh admin widget conversation
+  refreshAdminChatWidget();
+  // If citizen/staff chatbot is open on the admin-chat tab, refresh their thread too
+  const userIsViewingThread = chatOpen && chatMode === 'admin';
+  if (userIsViewingThread) {
+    renderUserAdminThread();
+  } else {
+    // Show badge on citizen/staff chatbot button (new admin reply arrived)
+    const citizenBadge = document.getElementById('chatBadge');
+    if (citizenBadge) {
+      citizenBadge.textContent = '1';
+      citizenBadge.classList.add('show');
+    }
+  }
+};
+
+// ============================================================================
+// VIEW RESPONSES MODAL (citizen/staff)
+// ============================================================================
+window.viewTicketResponses = function(ticketNumber) {
+  const t = DB.tickets.find(x => x.ticket_number === ticketNumber);
+  if (!t) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'resp-modal-overlay';
+  overlay.id = 'respModalOverlay';
+  overlay.innerHTML = `<div class="resp-modal">
+    <button class="close-modal-btn" onclick="document.getElementById('respModalOverlay').remove()">✕</button>
+    <h3>💬 Ticket Responses</h3>
+    <div class="ticket-ref">🎫 ${t.ticket_number} &nbsp;·&nbsp; ${t.department_name} &nbsp;·&nbsp; <span class="status-pill ${statusClass(t.status)}" style="font-size:0.75rem;">${statusEmoji(t.status)} ${t.status}</span></div>
+    ${t.admin_response
+      ? `<div class="resp-has-response">
+           <div class="resp-by">✅ Admin Response</div>
+           <div class="resp-body">${t.admin_response}</div>
+           <div class="resp-date">By ${t.admin_response_by} on ${new Date(t.admin_response_at).toLocaleString('en-ZA')}</div>
+         </div>`
+      : `<div class="resp-no-response">⏳ No responses yet.<br><span style="font-weight:400;font-size:0.85rem;margin-top:6px;display:block;">Admin will respond to your ticket shortly. Check back again soon.</span></div>`
+    }
+    <div style="margin-top:18px;text-align:right;"><button class="btn btn-outline btn-small" onclick="document.getElementById('respModalOverlay').remove()" style="width:auto;">Close</button></div>
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+};
+
+// ============================================================================
+// MAIN RENDER
+// ============================================================================
+async function render() {
+  if (!currentUser) renderAuth();
+  else if (currentUser.role==='admin') renderAdminDashboard();
+  else if (currentUser.role==='staff') renderStaffDashboard();
+  else renderExternalDashboard();
+}
+
+// Init
+render();
+</script>
+</body>
+</html>
